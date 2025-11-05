@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 QRCode Tool - MHD, Services
-- واجهة حديثة مع أزرار موحّدة وتأثير Hover
-- معاينة مباشرة للـ QR
-- اختيار ألوان النقاط والخلفية
-- إدراج شعار في وسط الـQR مع حافة بيضاء وخيار حجم الشعار
-- تحميل أيقونة البرنامج تلقائيًا من assets/app_icon.ico أو assets/app_icon.png
+A lightweight Tkinter GUI for generating QR codes with:
+- Custom colors (fill/background)
+- Optional centered logo (with white padding)
+- Live preview
+- Simple, modern-styled buttons with hover states
 """
 
 import os
@@ -15,29 +15,31 @@ from PIL import Image, ImageTk
 import tkinter as tk
 from tkinter import filedialog, colorchooser, messagebox, ttk
 
-# =========================
-# مساعدة: مسار الموارد (يدعم PyInstaller)
-# =========================
+# ---------- Utilities ----------
 def resource_path(rel_path: str) -> str:
+    """
+    Resolve resource path for both normal runs and PyInstaller bundles.
+    """
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base, rel_path)
 
-# =========================
-# ألوان وواجهات
-# =========================
-PRIMARY_BG = "#0d6efd"      # أزرق أنيق
+# ---------- UI Colors ----------
+PRIMARY_BG = "#0d6efd"
 PRIMARY_BG_HOVER = "#0b5ed7"
 PRIMARY_TX = "#ffffff"
 APP_BG = "#f7f9fc"
 CARD_BG = "#ffffff"
 BORDER = "#e5e7eb"
 
-PREVIEW_BG = "#6c757d"      # رمادي مريح
+PREVIEW_BG = "#6c757d"
 PREVIEW_HOVER = "#5c636a"
-SAVE_BG = "#16a34a"         # أخضر
-SAVE_HOVER = "#12823d"      # أخضر أغمق
+SAVE_BG = "#16a34a"
+SAVE_HOVER = "#12823d"
 
 def make_btn(parent, text, command, width=24, bg=PRIMARY_BG, hover=None):
+    """
+    Create a unified, hoverable Tk button with consistent styling.
+    """
     hover = hover or (PREVIEW_HOVER if bg == PREVIEW_BG else (SAVE_HOVER if bg == SAVE_BG else PRIMARY_BG_HOVER))
     btn = tk.Button(
         parent, text=text, command=command,
@@ -53,15 +55,20 @@ def make_btn(parent, text, command, width=24, bg=PRIMARY_BG, hover=None):
     return btn
 
 def center_window(win, w=400, h=680):
+    """
+    Center the root window on screen.
+    """
     win.update_idletasks()
     x = (win.winfo_screenwidth() // 2) - (w // 2)
     y = (win.winfo_screenheight() // 2) - (h // 2)
     win.geometry(f"{w}x{h}+{x}+{y}")
 
-# =========================
-# منطق إنشاء الـQR
-# =========================
+# ---------- QR Generation ----------
 def generate_qr(preview=False):
+    """
+    Build a QR image from the current form settings.
+    If preview=True, render into the preview area instead of saving.
+    """
     data = entry.get().strip()
     if not data:
         messagebox.showwarning("Input required", "Please enter text or URL!")
@@ -81,6 +88,7 @@ def generate_qr(preview=False):
         back_color=back_color.get()
     ).convert("RGB")
 
+    # Optional centered logo with a thin white border for readability
     if logo_path.get():
         try:
             logo = Image.open(logo_path.get()).convert("RGBA")
@@ -115,11 +123,17 @@ def generate_qr(preview=False):
         messagebox.showinfo("Success", f"QR Code saved as {filename}")
 
 def choose_color(var):
+    """
+    Open a color picker and assign the chosen color to a Tk variable.
+    """
     color_code = colorchooser.askcolor(title="Choose color")[1]
     if color_code:
         var.set(color_code)
 
 def choose_logo():
+    """
+    Select a center logo image file (PNG/JPG).
+    """
     path = filedialog.askopenfilename(
         filetypes=[("Image files", "*.png;*.jpg;*.jpeg")],
         title="Choose QR center logo"
@@ -128,6 +142,9 @@ def choose_logo():
         logo_path.set(path)
 
 def show_preview(img):
+    """
+    Render a resized thumbnail of the QR into the preview label.
+    """
     preview_side = 260
     qr_w, qr_h = img.size
     ratio = preview_side / max(qr_w, qr_h)
@@ -136,15 +153,14 @@ def show_preview(img):
     preview_label.config(image=img_tk, text="")
     preview_label.image = img_tk
 
-# =========================
-# GUI
-# =========================
+# ---------- GUI ----------
 root = tk.Tk()
 root.title("QRCode Tool - MHD, Services")
 root.configure(bg=APP_BG)
 center_window(root, 400, 680)
 root.minsize(380, 620)
 
+# App icon (supports both .ico for Windows and .png for cross-platform)
 ico_path = resource_path(os.path.join("assets", "app_icon.ico"))
 png_path = resource_path(os.path.join("assets", "app_icon.png"))
 
@@ -158,18 +174,22 @@ if os.path.exists(png_path):
         root._app_icon_ref = _icon_img
     except: pass
 
+# Card container
 card = tk.Frame(root, bg=CARD_BG, bd=0, highlightthickness=1, highlightbackground=BORDER)
 card.pack(padx=16, pady=16, fill="both", expand=True)
 
+# Input
 tk.Label(card, text="Enter text or URL:", bg=CARD_BG, fg="#111827", font=("Segoe UI", 10, "bold")).pack(pady=(16, 6))
 entry = tk.Entry(card, width=40, font=("Segoe UI", 10))
 entry.pack(padx=16, pady=(0, 12))
 
+# State variables
 fill_color = tk.StringVar(value="black")
 back_color = tk.StringVar(value="white")
 logo_path = tk.StringVar(value="")
 logo_scale = tk.DoubleVar(value=25)
 
+# Controls
 btn_fill = make_btn(card, "Pick Fill Color", lambda: choose_color(fill_color))
 btn_back = make_btn(card, "Pick Background Color", lambda: choose_color(back_color))
 btn_logo = make_btn(card, "Choose Logo (optional)", choose_logo)
@@ -190,12 +210,14 @@ scale = ttk.Scale(
 )
 scale.pack(fill="x", padx=32)
 
+# Actions
 btn_preview = make_btn(card, "Preview QR Code", lambda: generate_qr(preview=True), bg=PREVIEW_BG, hover=PREVIEW_HOVER)
 btn_save = make_btn(card, "Save QR Code", generate_qr, bg=SAVE_BG, hover=SAVE_HOVER)
 
 btn_preview.pack(pady=(12, 6))
 btn_save.pack(pady=6)
 
+# Preview area
 preview_wrap = tk.Frame(card, bg=CARD_BG)
 preview_wrap.pack(padx=12, pady=(6, 16), fill="both", expand=True)
 
