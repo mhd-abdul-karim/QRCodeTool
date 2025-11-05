@@ -94,4 +94,3 @@ If you plan to use or distribute it commercially, please contact the author.
 ## ⭐ Support
 
 If you like this project, please consider giving it a ⭐ on GitHub — it helps a lot!
-```
